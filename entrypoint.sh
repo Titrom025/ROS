@@ -2,20 +2,26 @@ cd /sources/catkin_ws/
 /opt/ros/noetic/bin/catkin_make
 source /sources/catkin_ws/devel/setup.bash
 
+rosparam set use_sim_time true
+
 echo "Run roscore"
 roscore &
-sleep 2
+sleep 1
 echo "Run bag play"
 rosbag play /sources/test_data.bag -i
-sleep 2
+sleep 1
 
 echo "Run bot_sort_node.py"
 python /sources/catkin_ws/src/husky_tidy_bot_cv/scripts/bot_sort_node.py -vis &
 sleep 2
 
-echo "Run rviz"
-rosrun rviz rviz -d /sources/rviz_conf.rviz &
+echo "Run tracker_3d_node.py"
+python /sources/catkin_ws/src/husky_tidy_bot_cv/scripts/tracker_3d_node.py -vis &
 sleep 2
 
-rosbag play /sources/test_data.bag 
-exec /bin/bash 
+echo "Run rviz"
+rosrun rviz rviz -d /sources/rviz_conf.rviz &
+sleep 3
+
+rosbag play /sources/test_data.bag -r 0.4
+# exec /bin/bash 

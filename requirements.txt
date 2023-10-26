@@ -33,3 +33,6 @@ rospkg
 Cython
 cython_bbox 
 faiss-gpu
+rosnumpy
+ftfy 
+regex

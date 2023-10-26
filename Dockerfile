@@ -21,25 +21,33 @@ ADD requirements.txt ./
 
 RUN pip install Cython
 RUN pip install -r requirements.txt
+RUN pip install git+https://github.com/openai/CLIP.git
 
 ADD test_data.bag /sources/
 
-# RUN git clone https://github.com/andrey1908/kas_utils.git /sources/
+ADD init_clip_model.py /sources/init_clip_model.py
+RUN python /sources/init_clip_model.py
+
+# git clone https://github.com/andrey1908/kas_utils.git
 ADD kas_utils/ /sources/kas_utils/
 
-# RUN git clone https://github.com/andrey1908/BoT-SORT /sources/catkin_ws/src/
+# git clone https://github.com/andrey1908/BoT-SORT
+ADD BoT-SORT/ /sources/BoT-SORT/ 
+
+# git clone https://github.com/andrey1908/husky_tidy_bot_cv
 ADD husky_tidy_bot_cv/ /sources/catkin_ws/src/husky_tidy_bot_cv/
 
-# RUN git clone https://github.com/andrey1908/BoT-SORT /sources/BoT-SORT/ 
-ADD BoT-SORT/ /sources/BoT-SORT/ 
+ADD rviz_conf.rviz /sources/rviz_conf.rviz
 
 WORKDIR /sources/kas_utils/python
 RUN pip install .
 
+ADD modified_files/bot_sort_node.py /sources/catkin_ws/src/husky_tidy_bot_cv/scripts/bot_sort_node.py
+ADD modified_files/bot_sort.py /sources/BoT-SORT/tracker/bot_sort.py
+ADD modified_files/fast_reid_interfece.py /sources/BoT-SORT/fast_reid/fast_reid_interfece.py
+
 WORKDIR /sources/BoT-SORT/ 
 RUN pip install .
-
-ADD rviz_conf.rviz /sources/rviz_conf.rviz
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
