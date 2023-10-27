@@ -40,15 +40,11 @@ class STrack(BaseTrack):
         self.alpha = 0.9
 
     def update_features(self, feat):
-        # feat /= np.linalg.norm(feat)
         self.curr_feat = feat
-        # if self.smooth_feat is None:
-        #     self.smooth_feat = feat
-        # else:
-        #     self.smooth_feat = self.alpha * self.smooth_feat + (1 - self.alpha) * feat
-        self.features.append(feat)
-        # self.smooth_feat /= np.linalg.norm(self.smooth_feat)
-        self.smooth_feat = feat
+        if self.smooth_feat is None:
+            self.smooth_feat = feat
+        else:
+            self.smooth_feat = self.alpha * self.smooth_feat + (1 - self.alpha) * feat
 
     def predict(self):
         mean_state = self.mean.copy()
@@ -103,7 +99,6 @@ class STrack(BaseTrack):
             self.is_activated = True
         self.frame_id = frame_id
         self.start_frame = frame_id
-        print(f'New track: frame_id: {frame_id}, track_id: {self.track_id} | {self.tlwh_to_xywh(self._tlwh)}')
 
     def re_activate(self, new_track, frame_id, new_id=False):
 
@@ -200,6 +195,10 @@ class STrack(BaseTrack):
     def tlbr_to_tlwh(tlbr):
         ret = np.asarray(tlbr).copy()
         ret[2:] -= ret[:2]
+        ret[0] -= 35
+        ret[1] -= 20
+        ret[2] += 70
+        ret[3] += 40
         return ret
 
     @staticmethod
@@ -231,32 +230,40 @@ class BoTSORT(object):
         self.new_track_thresh = new_track_thresh
         self.match_thresh = match_thresh
 
-        self.with_reid = True
-        self.with_clip = True
-        # self.with_reid = with_reid
+        self.fast_reid_config = fast_reid_config
+        self.fast_reid_weights = fast_reid_weights
+        self.clip_model = None
         self.mot20 = mot20
 
         self.track_buffer_size = track_buffer_size
         self.kalman_filter = KalmanFilter()
 
         # ReID module
-        self.proximity_thresh = proximity_thresh
-        self.appearance_thresh = appearance_thresh
+        # self.with_reid = with_reid
+        self.with_reid = True
+        self.with_clip = True
+        self.proximity_thresh = 0.95
+        self.appearance_thresh = 0.45
+        self.device = device
 
-        if self.with_clip:
-            self.device = "cuda" if torch.cuda.is_available() else "cpu"
-            self.model, self.preprocess = clip.load("ViT-B/32", device=self.device)
-            _text_descriptions = ["red cube", "orange cube", "yellow cube", "blue cube", 
-                      "green cube", "black cube", "white cube", "not a cube"]
-            self.tokenized_text = clip.tokenize(_text_descriptions).to(device)
-        elif with_reid:
-            self.encoder = FastReIDInterface(fast_reid_config, fast_reid_weights, device)
+        self.init_embedding_model()
 
         self.gmc = GMC(method=cmc_method, downscale=3)
 
         with open('/docker_data/clip_log.txt', 'w') as f:
             pass
 
+    def init_embedding_model(self):
+        if self.with_clip:
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
+            self.clip_model, self.preprocess = clip.load("ViT-B/32", device=self.device)
+            _text_descriptions = [
+                "red cube", "orange cube", "yellow cube", "blue cube", 
+                "green cube", "black cube", "white cube", "light source"
+            ]
+            self.tokenized_text = clip.tokenize(_text_descriptions).to(self.device)
+        elif self.with_reid:
+            self.encoder = FastReIDInterface(self.fast_reid_config, self.fast_reid_weights, self.device)
 
     def get_clip_features(self, image, detections):
         if detections is None or np.size(detections) == 0:
@@ -278,15 +285,8 @@ class BoTSORT(object):
             patch = self.preprocess(patch).unsqueeze(0).to(self.device)
 
             with torch.no_grad():
-                t_start = time.time()
-                logits_per_image, _ = self.model(patch, self.tokenized_text)
+                logits_per_image, _ = self.clip_model(patch, self.tokenized_text)
                 image_features = logits_per_image.softmax(dim=-1).cpu().numpy()[0]
-                clip_time = round((time.time() - t_start) * 1000, 2)
-                print(f'Clip time: {clip_time} ')
-                clip_info = f'frame_id: {self.frame_id}, det: {d} - ' + " ".join([str(v) for v in image_features])
-                with open('/docker_data/clip_log.txt', 'a') as f_clip:
-                    f_clip.write(clip_info + '\n')
-                print(clip_info)
 
                 features.append(image_features)
             
@@ -384,7 +384,8 @@ class BoTSORT(object):
             ious_dists = matching.fuse_score(ious_dists, detections)
 
         if self.with_reid:
-            emb_dists = matching.embedding_distance(strack_pool, detections) / 2.0
+            # emb_dists = matching.embedding_distance(strack_pool, detections) / 2.0
+            emb_dists = matching.embedding_distance(strack_pool, detections)
             raw_emb_dists = emb_dists.copy()
             emb_dists[emb_dists > self.appearance_thresh] = 1.0
             ious_dists_mask = (ious_dists > self.proximity_thresh)
@@ -494,18 +495,6 @@ class BoTSORT(object):
             track.activate(self.kalman_filter, self.frame_id)
             activated_starcks.append(track)
 
-            OFFSET = 5
-            im_h, im_w = img.shape[:2]
-            obj_x, obj_y, obj_w, obj_h = track.tlwh_to_xywh(track._tlwh)
-            print(f'New track with id: {track.track_id}')
-            print('initial location', obj_x, obj_y, obj_w, obj_y )
-            obj_x0 = max(0, round(obj_x - obj_w / 2) - OFFSET)
-            obj_y0 = max(0, round(obj_y - obj_h / 2) - OFFSET)
-            obj_x1 = min(im_w - 1, round(obj_x + obj_w / 2) + 2 * OFFSET)
-            obj_y1 = min(im_h - 1, round(obj_y + obj_h / 2) + 2 * OFFSET)
-            tracked_item = img[obj_y0:obj_y1, obj_x0:obj_x1, :]
-            print(f'location with offset x0: {obj_x0}, x1: {obj_x1}, y0: {obj_y0}, y1: {obj_y1}, shape, {tracked_item.shape}')
-            cv2.imwrite(f'/docker_data/track_init_{track.track_id}.jpg', tracked_item)
 
         """ Step 5: Update state"""
         for track in self.lost_stracks:

@@ -62,13 +62,6 @@ class BoTSORT_node(BoTSORT_wrapper):
         self.output_stamps = list()
         self.output_delays = list()
 
-        output_file = "/docker_data/output_video_clip_v2.mp4"
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        fps = 30 
-        width, height = 1280, 720 
-        self.video_writer = cv2.VideoWriter(output_file, fourcc, fps, (width, height))
-        self.video_writer_frames = 0
-        self.update_times = []
 
     def start(self):
         self.segmentation_sub = message_filters.Subscriber(self.segmentation_topic, Objects)
@@ -100,10 +93,7 @@ class BoTSORT_node(BoTSORT_wrapper):
                     for mask_in_roi, roi, width, height in \
                         zip(masks_in_rois, rois, widths, heights)]
                 infos = np.array(infos, dtype=object)
-                t_start = time.time()
                 tracked_objects = self.track(boxes, scores, classes_ids, image, infos=infos)
-                update_time = round((time.time() - t_start) * 1000, 2)
-                self.update_times.append(update_time)
                 scores, classes_ids, tracking_ids, boxes, infos = \
                     BoTSORT_wrapper.preprocess(tracked_objects)
 
@@ -128,13 +118,6 @@ class BoTSORT_node(BoTSORT_wrapper):
                     draw_objects(vis, scores, tracking_ids, masks=masks, customs=customs,
                         draw_masks=True, format="{s:.02f}, c: {c[0]}, t: {c[1]}",
                         palette=self.palette, color_by_object_id=True)
-                self.video_writer_frames += 1
-                if self.video_writer_frames < 1000:
-                    self.video_writer.write(vis)
-                elif self.video_writer is not None:
-                    tracking_node.video_writer.release()
-                    self.video_writer = None
-                    print(f'Mean update time: {sum(self.update_times) / len(self.update_times)}')
 
                 vis_msg = self.bridge.cv2_to_imgmsg(vis, encoding='bgr8')
                 vis_msg.header = segmentation_objects_msg.header
