@@ -262,6 +262,11 @@ class BoTSORT(object):
                 "green cube", "black cube", "white cube", "light source"
             ]
             self.tokenized_text = clip.tokenize(_text_descriptions).to(self.device)
+
+            dummy_input = np.ones((64, 64, 3), dtype=np.uint8)
+            dummy_input = Image.fromarray(dummy_input)
+            dummy_input = self.preprocess(dummy_input).unsqueeze(0).to(self.device)
+            _, _ = self.clip_model(dummy_input, self.tokenized_text)
         elif self.with_reid:
             self.encoder = FastReIDInterface(self.fast_reid_config, self.fast_reid_weights, self.device)
 
