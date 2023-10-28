@@ -195,10 +195,10 @@ class STrack(BaseTrack):
     def tlbr_to_tlwh(tlbr):
         ret = np.asarray(tlbr).copy()
         ret[2:] -= ret[:2]
-        ret[0] -= 35
-        ret[1] -= 20
-        ret[2] += 70
-        ret[3] += 40
+        ret[0] -= 10
+        ret[1] -= 5
+        ret[2] += 20
+        ret[3] += 10
         return ret
 
     @staticmethod
