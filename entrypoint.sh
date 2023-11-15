@@ -1,3 +1,5 @@
+source /opt/ros/noetic/setup.bash
+
 cd /sources/catkin_ws/
 /opt/ros/noetic/bin/catkin_make
 source /sources/catkin_ws/devel/setup.bash
@@ -21,7 +23,9 @@ sleep 2
 
 echo "Run rviz"
 rosrun rviz rviz -d /sources/rviz_conf.rviz &
-sleep 3
+sleep 5
 
-rosbag play /sources/test_data.bag -r 0.4
-# exec /bin/bash 
+# rosbag play /sources/test_data.bag
+# rosbag play /sources/test_data.bag -r 0.5 -s 7
+rosbag play /sources/test_data.bag -r 0.5
+exec /bin/bash 
