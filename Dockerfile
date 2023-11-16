@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM nvidia/cuda:11.7.1-devel-ubuntu20.04
 
 RUN chmod 1777 /tmp
 ENV TZ=Etc/UTC
@@ -29,6 +29,15 @@ RUN pip install Cython
 RUN pip install -r requirements.txt
 RUN pip install git+https://github.com/openai/CLIP.git
 
+ADD openseed_src/requirements.txt ./
+RUN python -m pip install 'git+https://github.com/MaureenZOU/detectron2-xyz.git'
+RUN pip install git+https://github.com/cocodataset/panopticapi.git
+RUN python -m pip install -r requirements.txt
+RUN pip install albumentations Pillow==9.5.0 wandb open_clip_torch
+
+RUN conda install -c conda-forge rospkg
+RUN apt-get -y install software-properties-common 
+
 ADD test_data.bag /sources/
 
 ADD init_clip_model.py /sources/init_clip_model.py
@@ -40,20 +49,24 @@ ADD kas_utils/ /sources/kas_utils/
 # git clone https://github.com/andrey1908/BoT-SORT
 ADD BoT-SORT/ /sources/BoT-SORT/ 
 
-# git clone https://github.com/andrey1908/husky_tidy_bot_cv
-ADD husky_tidy_bot_cv/ /sources/catkin_ws/src/husky_tidy_bot_cv/
-
-ADD rviz_conf.rviz /sources/rviz_conf.rviz
+# ADD rviz_conf.rviz /sources/rviz_conf.rviz
+ADD rviz_with_segment.rviz /sources/rviz_conf.rviz
 
 WORKDIR /sources/kas_utils/python
 RUN pip install .
+
+WORKDIR /sources/BoT-SORT/ 
+RUN pip install .
+
+# git clone https://github.com/andrey1908/husky_tidy_bot_cv
+ADD husky_tidy_bot_cv/ /sources/catkin_ws/src/husky_tidy_bot_cv/
 
 ADD modified_files/bot_sort_node.py /sources/catkin_ws/src/husky_tidy_bot_cv/scripts/bot_sort_node.py
 ADD modified_files/bot_sort.py /sources/BoT-SORT/tracker/bot_sort.py
 ADD modified_files/fast_reid_interfece.py /sources/BoT-SORT/fast_reid/fast_reid_interfece.py
 
-WORKDIR /sources/BoT-SORT/ 
-RUN pip install .
+ADD communication_msgs/ /sources/catkin_ws/src/communication_msg
+ADD openseed_src/ /sources/catkin_ws/src/openseed_src
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
