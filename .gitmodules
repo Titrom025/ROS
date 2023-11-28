@@ -1,3 +1,6 @@
 [submodule "BoT-SORT"]
 	path = BoT-SORT
 	url = https://github.com/andrey1908/BoT-SORT
+[submodule "kas_utils"]
+	path = kas_utils
+	url = https://github.com/andrey1908/kas_utils.git
