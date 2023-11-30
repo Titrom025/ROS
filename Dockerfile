@@ -38,10 +38,8 @@ RUN pip install albumentations Pillow==9.5.0 wandb open_clip_torch
 RUN conda install -c conda-forge rospkg
 RUN apt-get -y install software-properties-common 
 
-ADD test_data.bag /sources/
-
-ADD init_clip_model.py /sources/init_clip_model.py
-RUN python /sources/init_clip_model.py
+# ADD init_clip_model.py /sources/init_clip_model.py
+# RUN python /sources/init_clip_model.py
 
 # git clone https://github.com/andrey1908/kas_utils.git
 ADD kas_utils/ /sources/kas_utils/
@@ -56,16 +54,29 @@ WORKDIR /sources/kas_utils/python
 RUN pip install .
 
 WORKDIR /sources/BoT-SORT/ 
+ADD modified_files/bot_sort.py /sources/BoT-SORT/tracker/bot_sort.py
+ADD modified_files/fast_reid_interfece.py /sources/BoT-SORT/fast_reid/fast_reid_interfece.py
 RUN pip install .
+
+ADD communication_msgs/ /sources/catkin_ws/src/communication_msg
+ADD openseed_src/openseed/body/encoder/ops/ /sources/catkin_ws/src/openseed_src/openseed/body/encoder/ops
+
+RUN ["/bin/bash", "-c", "source /opt/ros/noetic/setup.bash && \
+    cd /sources/catkin_ws/src/openseed_src/openseed/body/encoder/ops && \
+    ./make.sh"]
 
 # git clone https://github.com/andrey1908/husky_tidy_bot_cv
 ADD husky_tidy_bot_cv/ /sources/catkin_ws/src/husky_tidy_bot_cv/
-
 ADD modified_files/bot_sort_node.py /sources/catkin_ws/src/husky_tidy_bot_cv/scripts/bot_sort_node.py
-ADD modified_files/bot_sort.py /sources/BoT-SORT/tracker/bot_sort.py
-ADD modified_files/fast_reid_interfece.py /sources/BoT-SORT/fast_reid/fast_reid_interfece.py
 
-ADD communication_msgs/ /sources/catkin_ws/src/communication_msg
+RUN ["/bin/bash", "-c", "source /opt/ros/noetic/setup.bash && \
+    cd /sources/catkin_ws/ && \
+    /opt/ros/noetic/bin/catkin_make --cmake-args \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DPYTHON_EXECUTABLE=/usr/bin/python3.8 \
+        -DPYTHON_INCLUDE_DIR=/usr/include/python3.8m \
+        -DPYTHON_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython3.8m.so"]
+
 ADD openseed_src/ /sources/catkin_ws/src/openseed_src
 
 COPY entrypoint.sh /entrypoint.sh

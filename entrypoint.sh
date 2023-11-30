@@ -1,23 +1,12 @@
 source /opt/ros/noetic/setup.bash
-cd /sources/catkin_ws/src/openseed_src/openseed/body/encoder/ops
-sh make.sh
-
-cd /sources/catkin_ws/
-/opt/ros/noetic/bin/catkin_make --cmake-args \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DPYTHON_EXECUTABLE=/usr/bin/python3.8 \
-            -DPYTHON_INCLUDE_DIR=/usr/include/python3.8m \
-            -DPYTHON_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython3.8m.so
-
 source /sources/catkin_ws/devel/setup.bash
-
-rosparam set use_sim_time true
 
 echo "Run roscore"
 roscore &
-sleep 1
+sleep 2
+rosparam set use_sim_time true
 echo "Run bag play"
-rosbag play /sources/test_data.bag -i
+rosbag play /resources/data/test_data.bag -i
 sleep 1
 
 echo "Run bot_sort_node.py"

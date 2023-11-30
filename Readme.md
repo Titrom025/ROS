@@ -12,6 +12,21 @@
 3) Установить библиотеку для работы с nvidia в docker:  
 ``sudo apt-get install -y nvidia-container-toolkit``
 
+и модифицировать "/etc/docker/daemon.json":
+
+```
+{  
+    "runtimes": {  
+        "nvidia": {  
+            "path": "/usr/bin/nvidia-container-runtime",  
+            "runtimeArgs": []  
+        }  
+    },  
+    "default-runtime": "nvidia",  
+    "data-root": "/mnt/archive/docker"  
+}  
+```
+
 4) В файле BoT-SORT/fast_reid/fast_reid_interfece.py закомментировать строку 11 (строка не используется, но на данный момент вызывает конфликт версий пакетов)
 
 5) Запустить сборку образа  
