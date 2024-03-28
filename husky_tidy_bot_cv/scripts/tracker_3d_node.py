@@ -2,12 +2,12 @@ import rospy
 import tf2_ros
 import message_filters
 from std_msgs.msg import Header
-from sensor_msgs.msg import CameraInfo, Image
+from sensor_msgs.msg import CameraInfo, Image, PointCloud2
 from visualization_msgs.msg import Marker, MarkerArray
 from husky_tidy_bot_cv.msg import Objects, Objects3d
 from husky_tidy_bot_cv.srv import ResetRequest, ResetResponse, Reset
 from cv_bridge import CvBridge
-from conversions import from_objects_msg, to_objects3d_msg
+from conversions import from_objects_msg, to_objects3d_msg, create_point_cloud
 from tracker_3d import Tracker3D
 import numpy as np
 from kas_utils.time_measurer import TimeMeasurer
@@ -120,6 +120,8 @@ class Tracker3D_node(Tracker3D):
         self.output_stamps = list()
         self.output_delays = list()
 
+        self.point_cloud_pub = rospy.Publisher('point_cloud', PointCloud2, queue_size=10)
+
     def start(self):
         self.objects_sub = message_filters.Subscriber(self.objects_topic, Objects)
         self.depth_sub = message_filters.Subscriber(self.depth_topic, Image)
@@ -201,6 +203,13 @@ class Tracker3D_node(Tracker3D):
                 self.output_stamps.append(tracked_objects_3d_msg.header.stamp)
                 self.output_delays.append(output_delay)
                 self.tracked_objects_3d_pub.publish(tracked_objects_3d_msg)
+
+                point_arrays = []
+                for track_obj in self.tracked_objects:
+                    point_arrays.append((track_obj.tracking_id, track_obj.obj_points))
+                pc2_msg = create_point_cloud(point_arrays)
+
+                self.point_cloud_pub.publish(pc2_msg)
 
                 if self.visualization_pub is not None:
                     with self.vis_tm:

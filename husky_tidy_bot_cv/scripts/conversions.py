@@ -4,6 +4,10 @@ from fixed_cats import FIXED_CATEGORIES
 from geometry_msgs.msg import Point
 from numbers import Number
 
+import rospy
+from sensor_msgs.msg import PointCloud2, PointField
+from std_msgs.msg import Header
+import struct
 
 def to_box_msg(box):
     box_msg = Box()
@@ -176,3 +180,39 @@ def from_clasess_msg(cats_msg):
     labels = cats_msg.labels
     classes_ids = cats_msg.classes_ids
     return labels_only_cats, labels, classes_ids
+
+
+def create_point_cloud(point_arrays):
+    header = Header()
+    header.stamp = rospy.Time.now()
+    header.frame_id = "local_map_lidar" 
+
+    fields = [PointField('x', 0, PointField.FLOAT32, 1),
+              PointField('y', 4, PointField.FLOAT32, 1),
+              PointField('z', 8, PointField.FLOAT32, 1),
+              PointField('id', 12, PointField.UINT8, 1)]
+
+    point_count = sum(len(point_array) for _, point_array in point_arrays)
+    pc2 = PointCloud2()
+    pc2.header = header
+    pc2.fields = fields
+    pc2.is_bigendian = False
+    pc2.point_step = 13
+    pc2.row_step = pc2.point_step * point_count
+    pc2.height = 1
+    pc2.width = point_count
+    pc2.is_dense = False
+
+    pc2_data = []
+    for track_id, point_array in point_arrays:
+        for point in point_array:
+            pc2_data.append(
+                struct.pack(
+                    'fffB', 
+                    float(point[0]), float(point[1]), float(point[2]),
+                    track_id
+            ))
+
+    pc2.data = b''.join(pc2_data)
+
+    return pc2
