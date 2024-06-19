@@ -176,7 +176,7 @@ if __name__ == "__main__":
     
     segmentation_node = OpenSeeD_node(categories,
         ROOT_PATH + "configs/openseed_swint_lang_rosbag.yaml",
-        ROOT_PATH + "model_0003599.pth",
+        "/resources/models/model_0003599.pth",
 #         "/home/administrator/zemskova_ts/husky_tidy_bot_cv_ws/src/openseed_src/openseed_swint_lang_rosbag.yaml",
 #         "/home/administrator/zemskova_ts/husky_tidy_bot_cv_ws/src/openseed_src/model_final.pth",
 # #        "/home/wingrune/cv/OpenSeeD/configs/openseed/openseed_swint_lang_rosbag.yaml",
