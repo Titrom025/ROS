@@ -13,6 +13,7 @@ from kas_utils.visualization import draw_objects
 from kas_utils.masks import get_masks_rois, get_masks_in_rois
 
 from fixed_cats import FIXED_CATEGORIES
+import os
 
 ROOT_PATH = "/sources/catkin_ws/src/openseed_src/"
 sys.path.insert(0, ROOT_PATH)
@@ -174,6 +175,7 @@ if __name__ == "__main__":
     
     categories = [cat["name"] for cat in FIXED_CATEGORIES]
     
+    image_topic = os.getenv("IMAGE_TOPIC")
     segmentation_node = OpenSeeD_node(categories,
         ROOT_PATH + "configs/openseed_swint_lang_rosbag.yaml",
         "/resources/models/model_0003599.pth",
@@ -181,7 +183,8 @@ if __name__ == "__main__":
 #         "/home/administrator/zemskova_ts/husky_tidy_bot_cv_ws/src/openseed_src/model_final.pth",
 # #        "/home/wingrune/cv/OpenSeeD/configs/openseed/openseed_swint_lang_rosbag.yaml",
 # #        "/hdd/wingrune/openseed/output_finetune/model_0003599.pth",
-        "/realsense_gripper/color/image_raw/compressed", "/segmentation_openseed", labels_topic="/segmentation_labels",
+        image_topic,
+        "/segmentation_openseed", labels_topic="/segmentation_labels",
         out_visualization_topic=out_visualization_topic, min_score_seen=0.5, min_score_unseen=0.1)
     segmentation_node.start()
 

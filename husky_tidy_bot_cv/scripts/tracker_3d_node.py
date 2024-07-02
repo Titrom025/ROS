@@ -84,7 +84,7 @@ class Tracker3D_node(Tracker3D):
         self.out_tracked_objects_3d_topic = out_tracked_objects_3d_topic
         self.out_visualization_topic = out_visualization_topic
 
-        self.map_frame = "local_map_lidar"
+        self.map_frame = os.getenv("FIXED_FRAME", "local_map_lidar")
         self.camera_frame = "realsense_gripper_color_optical_frame"
 
         self.tracked_objects_3d_pub = \
@@ -288,11 +288,12 @@ if __name__ == '__main__':
     else:
         out_visualization_topic = None
 
+    depth_topic = os.getenv("DEPTH_TOPIC")
+    print('tracker 3d node depth_topic', depth_topic, "objects_topic", objects_topic)
     tracker_3d_node = Tracker3D_node(
         objects_topic,
         "/realsense_gripper/aligned_depth_to_color/camera_info",
-        "/realsense_gripper/aligned_depth_to_color/image_raw",
-
+        depth_topic,
         "/tracked_objects_3d",
         out_visualization_topic=out_visualization_topic,
         erosion_size=5)

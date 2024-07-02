@@ -140,8 +140,10 @@ if __name__ == "__main__":
         out_visualization_topic = "/tracking_vis"
     else:
         out_visualization_topic = None
-    tracking_node = BoTSORT_node("/segmentation",
-        "/realsense_gripper/color/image_raw/compressed",
+
+    image_topic = os.getenv("IMAGE_TOPIC")
+    tracking_node = BoTSORT_node("/segmentation_openseed",
+        image_topic,
         "/tracking",
         out_visualization_topic=out_visualization_topic)
     tracking_node.start()
